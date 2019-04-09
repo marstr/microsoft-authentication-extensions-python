@@ -10,9 +10,3 @@ def test_keychain_roundtrip():
         got = subject.get_generic_password(location, account)
         assert got == want
 
-    with Keychain('~/Library/Keychains/login.keychain-db') as subject:
-        location, account = "msal_extension_test2", "test_account2"
-        want = uuid.uuid4().hex
-        subject.set_generic_password(location, account, want)
-        got = subject.get_generic_password(location, account)
-        assert got == want

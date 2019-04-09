@@ -4,9 +4,12 @@ from setuptools import setup, find_packages
 
 setup(
     name='msal-extensions',
-    packages=find_packages(exclude=[
-        "tests",
-    ]),
+    package_dir={
+        '': 'src',
+    },
+    packages=find_packages(
+        where="./src/",
+    ),
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',
     ],
