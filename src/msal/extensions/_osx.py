@@ -3,10 +3,11 @@ import os
 
 OS_result = _ctypes.c_int32
 
+
 class KeychainError(OSError):
     def __init__(self, exit_status):
         self.exit_status = exit_status
-        # TODO use SecCopyErrorMessageString to fetch the appropriate message here.
+        # TODO: use SecCopyErrorMessageString to fetch the appropriate message here.
         self.message = '{} ' \
                        'check https://opensource.apple.com/source/CarbonHeaders/CarbonHeaders-18.1/MacErrors.h'.format(
                             self.exit_status)
