@@ -7,6 +7,7 @@ if not sys.platform.startswith('win'):
 else:
     from msal.extensions._windows import WindowsDataProtectionAgent
 
+
 def test_dpapi_roundtrip_no_entropy():
     subject = WindowsDataProtectionAgent()
 

@@ -15,4 +15,3 @@ def test_keychain_roundtrip():
         subject.set_generic_password(location, account, want)
         got = subject.get_generic_password(location, account)
         assert got == want
-
