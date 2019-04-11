@@ -8,7 +8,7 @@ setup(
         '': 'src',
     },
     packages=find_packages(
-        where="./src/",
+        where="./src",
     ),
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',
