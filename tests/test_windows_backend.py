@@ -1,6 +1,8 @@
 import sys
+import os
 import pytest
 import uuid
+import json
 
 if not sys.platform.startswith('win'):
     pytest.skip('skipping windows-only tests', allow_module_level=True)
@@ -8,22 +10,42 @@ else:
     from msal.extensions._windows import WindowsDataProtectionAgent
 
 
-def test_dpapi_roundtrip_no_entropy():
-    subject = WindowsDataProtectionAgent()
-
-    want = uuid.uuid4().hex
-    ciphered = subject.protect(want)
-    assert ciphered != want
-    got = subject.unprotect(ciphered)
-    assert got == want
-
-
 def test_dpapi_roundtrip_with_entropy():
-    subject = WindowsDataProtectionAgent(entropy=uuid.uuid4().hex)
+    subject_without_entropy = WindowsDataProtectionAgent()
+    subject_with_entropy = WindowsDataProtectionAgent(entropy=uuid.uuid4().hex)
 
-    want = uuid.uuid4().hex
-    ciphered = subject.protect(want)
-    assert ciphered != want
+    test_cases = [
+        '',
+        'lorem ipsum',
+        'lorem-ipsum',
+        '<Python>',
+        uuid.uuid4().hex,
+    ]
 
-    got = subject.unprotect(ciphered)
-    assert got == want
+    for tc in test_cases:    
+        ciphered = subject_with_entropy.protect(tc)
+        assert ciphered != tc
+
+        got = subject_with_entropy.unprotect(ciphered)
+        assert got == tc
+
+        ciphered = subject_without_entropy.protect(tc)
+        assert ciphered != tc
+
+        got = subject_without_entropy.unprotect(ciphered)
+        assert got == tc
+
+
+def test_read_msal_cache():
+    try:
+        msal_location = os.path.join(os.getenv('LOCALAPPDATA'), 'msal.cache')
+        with open(msal_location, mode='rb') as fh:
+            contents = fh.read()
+    except FileNotFoundError:
+        pytest.skip('could not find the msal.cache file (try logging in using MSAL)')
+    
+    subject = WindowsDataProtectionAgent()
+    raw = subject.unprotect(contents)
+    assert raw != ""
+
+    json.loads(raw)
