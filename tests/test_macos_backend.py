@@ -1,5 +1,11 @@
-from msal.extensions._osx import Keychain
+import sys
+import pytest
 import uuid
+
+if not sys.platform.startswith('darwin'):
+    pytest.skip('skipping MacOS-only tests', allow_module_level=True)
+else:
+    from msal.extensions._osx import Keychain
 
 
 def test_keychain_roundtrip():

@@ -13,4 +13,9 @@ setup(
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',
     ],
+    extras_require={
+        'dev': [
+            'pytest',
+        ]
+    },
 )

@@ -1,5 +1,5 @@
-import ctypes as _ctypes
 import os
+import ctypes as _ctypes
 
 OS_result = _ctypes.c_int32
 
@@ -14,31 +14,25 @@ class KeychainError(OSError):
 
 
 class KeychainAccessDeniedError(KeychainError):
-    @classmethod
-    def exit_status(cls):
-        return -128
+    EXIT_STATUS = -128
 
     def __init__(self):
-        super().__init__(KeychainAccessDeniedError.exit_status())
+        super().__init__(KeychainAccessDeniedError.EXIT_STATUS)
 
 
 class NoSuchKeychainError(KeychainError):
-    @classmethod
-    def exit_status(cls):
-        return -25294
+    EXIT_STATUS = -25294
 
     def __init__(self, name):
-        super().__init__(NoSuchKeychainError.exit_status())
+        super().__init__(NoSuchKeychainError.EXIT_STATUS)
         self.name = name
 
 
 class NoDefaultKeychainError(KeychainError):
-    @classmethod
-    def exit_status(cls):
-        return -25307
+    EXIT_STATUS = -25307
 
     def __init__(self):
-        super().__init__(NoDefaultKeychainError.exit_status())
+        super().__init__(NoDefaultKeychainError.EXIT_STATUS)
 
 
 class KeychainItemNotFoundError(KeychainError):
@@ -51,14 +45,14 @@ class KeychainItemNotFoundError(KeychainError):
         self.name = name
 
 
-def _construct_error(**kwargs):
-    if kwargs['exit_status'] == KeychainAccessDeniedError.exit_status():
+def _construct_error(exit_status, **kwargs):
+    if exit_status == KeychainAccessDeniedError.EXIT_STATUS:
         return KeychainAccessDeniedError()
-    if kwargs['exit_status'] == NoSuchKeychainError.exit_status():
+    if exit_status == NoSuchKeychainError.EXIT_STATUS:
         return NoSuchKeychainError(kwargs['keychain_name'])
-    if kwargs['exit_status'] == NoDefaultKeychainError.exit_status():
+    if exit_status == NoDefaultKeychainError.EXIT_STATUS:
         return NoDefaultKeychainError()
-    if kwargs['exit_status'] == KeychainItemNotFoundError.exit_status():
+    if exit_status == KeychainItemNotFoundError.exit_status():
         return KeychainItemNotFoundError(kwargs['item_name'])
 
 
@@ -73,8 +67,12 @@ def _get_native_location(name):
 
 
 # Load native MacOS libraries
-_security = _ctypes.CDLL(_get_native_location('Security'))
-_core = _ctypes.CDLL(_get_native_location('CoreFoundation'))
+try:
+    _security = _ctypes.CDLL(_get_native_location('Security'))
+    _core = _ctypes.CDLL(_get_native_location('CoreFoundation'))
+except OSError:
+    _security = None
+    _core = None
 
 # Bind CFRelease from native MacOS libraries.
 _coreRelease = _core.CFRelease
@@ -141,7 +139,6 @@ _securityKeychainFindGenericPassword.argtypes = (
     _ctypes.POINTER(_ctypes.c_void_p),
 )
 _securityKeychainFindGenericPassword.restype = OS_result
-
 # Bind SecKeychainAddGenericPassword from native MacOS
 # https://developer.apple.com/documentation/security/1398366-seckeychainaddgenericpassword?language=objc
 _securityKeychainAddGenericPassword = _security.SecKeychainAddGenericPassword
@@ -158,31 +155,31 @@ _securityKeychainAddGenericPassword.argtypes = (
 _securityKeychainAddGenericPassword.restype = OS_result
 
 
-class Keychain:
-    """Encapsulates the interactions with a particular MacOS Keychain"""
+class Keychain(object):
+    """Encapsulates the interactions with a particular MacOS Keychain."""
     def __init__(self, filename=None):
         # type: (str) -> None
-        self.ref = _ctypes.c_void_p()
+        self._ref = _ctypes.c_void_p()
 
         if filename:
             filename = os.path.expanduser(filename)
-            self.filename = filename.encode('utf-8')
+            self._filename = filename.encode('utf-8')
         else:
-            self.filename = None
+            self._filename = None
 
     def __enter__(self):
-        if self.filename:
-            status = _securityKeychainOpen(self.filename, self.ref)
+        if self._filename:
+            status = _securityKeychainOpen(self._filename, self._ref)
         else:
-            status = _securityKeychainCopyDefault(self.ref)
+            status = _securityKeychainCopyDefault(self._ref)
 
-        if status != 0:
+        if not status:
             raise OSError(status)
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        if self.ref:
-            _coreRelease(self.ref)
+    def __exit__(self, *args):
+        if self._ref:
+            _coreRelease(self._ref)
 
     def get_generic_password(self, service, account_name):
         # type: (str, str) -> str
@@ -192,7 +189,7 @@ class Keychain:
         length = _ctypes.c_uint32()
         contents = _ctypes.c_void_p()
         exit_status = _securityKeychainFindGenericPassword(
-            self.ref,
+            self._ref,
             len(service),
             service,
             len(account_name),
@@ -202,7 +199,7 @@ class Keychain:
             None,
         )
 
-        if exit_status != 0:
+        if not exit_status:
             raise _construct_error(exit_status=exit_status)
 
         value = _ctypes.create_string_buffer(length.value)
@@ -217,7 +214,7 @@ class Keychain:
         value = value.encode('utf-8')
         entry = _ctypes.c_void_p()
         find_exit_status = _securityKeychainFindGenericPassword(
-            self.ref,
+            self._ref,
             len(service),
             service,
             len(account_name),
@@ -237,7 +234,7 @@ class Keychain:
             _securityKeychainItemFreeContent(None, entry)
         elif find_exit_status == KeychainItemNotFoundError.exit_status():
             add_exit_status = _securityKeychainAddGenericPassword(
-                self.ref,
+                self._ref,
                 len(service),
                 service,
                 len(account_name),
@@ -254,8 +251,9 @@ class Keychain:
 
     def get_internet_password(self, service, username):
         # type: (str, str) -> str
-        raise NotImplementedError
+        raise NotImplementedError()
 
     def set_internet_password(self, service, username, value):
         # type: (str, str, str) -> str
-        raise NotImplementedError
+        raise NotImplementedError()
+
