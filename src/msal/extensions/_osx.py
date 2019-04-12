@@ -36,12 +36,10 @@ class NoDefaultKeychainError(KeychainError):
 
 
 class KeychainItemNotFoundError(KeychainError):
-    @classmethod
-    def exit_status(cls):
-        return -25300
+    EXIT_STATUS = -25300
 
     def __init__(self, name):
-        super().__init__(KeychainItemNotFoundError.exit_status())
+        super().__init__(KeychainItemNotFoundError.EXIT_STATUS)
         self.name = name
 
 
@@ -52,7 +50,7 @@ def _construct_error(exit_status, **kwargs):
         return NoSuchKeychainError(kwargs['keychain_name'])
     if exit_status == NoDefaultKeychainError.EXIT_STATUS:
         return NoDefaultKeychainError()
-    if exit_status == KeychainItemNotFoundError.exit_status():
+    if exit_status == KeychainItemNotFoundError.EXIT_STATUS:
         return KeychainItemNotFoundError(kwargs['item_name'])
 
 
