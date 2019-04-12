@@ -3,6 +3,7 @@ import os
 import pytest
 import uuid
 import json
+import msal.token_cache as msaltc
 
 if not sys.platform.startswith('win'):
     pytest.skip('skipping windows-only tests', allow_module_level=True)
@@ -48,4 +49,8 @@ def test_read_msal_cache():
     raw = subject.unprotect(contents)
     assert raw != ""
 
-    json.loads(raw)
+    cache = msaltc.SerializableTokenCache()
+    cache.deserialize(raw)
+    access_tokens = cache.find(msaltc.TokenCache.CredentialType.ACCESS_TOKEN)
+    assert len(access_tokens) > 0
+    

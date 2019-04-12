@@ -13,6 +13,9 @@ setup(
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',
     ],
+    install_requires=[
+        'msal~=0.3.0',
+    ],
     extras_require={
         'dev': [
             'pytest',
