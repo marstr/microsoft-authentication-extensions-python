@@ -15,6 +15,7 @@ setup(
     ],
     install_requires=[
         'msal~=0.3.0',
+        'psutil~=5.6',
     ],
     extras_require={
         'dev': [
