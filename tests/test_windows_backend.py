@@ -3,7 +3,7 @@ import os
 import pytest
 import uuid
 import json
-import msal.token_cache as msaltc
+import msal
 
 if not sys.platform.startswith('win'):
     pytest.skip('skipping windows-only tests', allow_module_level=True)
@@ -38,19 +38,30 @@ def test_dpapi_roundtrip_with_entropy():
 
 
 def test_read_msal_cache():
-    try:
-        msal_location = os.path.join(os.getenv('LOCALAPPDATA'), 'msal.cache')
-        with open(msal_location, mode='rb') as fh:
-            contents = fh.read()
-    except FileNotFoundError:
-        pytest.skip('could not find the msal.cache file (try logging in using MSAL)')
-    
+    cache_locations = [
+        os.path.join(os.getenv('LOCALAPPDATA'), '.IdentityService', 'msal.cache'), # this is where it's supposed to be
+        os.path.join(os.getenv('LOCALAPPDATA'), '.IdentityServices', 'msal.cache'), # There was a miscommunications about whether this was plural or not.
+        os.path.join(os.getenv('LOCALAPPDATA'), 'msal.cache'), # The earliest most naive builds used this locations.
+    ]
+
+    found = False
+    for loc in cache_locations:
+        try:
+            with open(loc, mode='rb') as fh:
+                contents = fh.read()
+            found = True
+            break
+        except FileNotFoundError:
+                pass
+    if not found:
+            pytest.skip('could not find the msal.cache file (try logging in using MSAL)')
+
     subject = WindowsDataProtectionAgent()
     raw = subject.unprotect(contents)
     assert raw != ""
 
-    cache = msaltc.SerializableTokenCache()
+    cache = msal.SerializableTokenCache()
     cache.deserialize(raw)
-    access_tokens = cache.find(msaltc.TokenCache.CredentialType.ACCESS_TOKEN)
+    access_tokens = cache.find(msal.TokenCache.CredentialType.ACCESS_TOKEN)
     assert len(access_tokens) > 0
     
