@@ -2,6 +2,7 @@
 # https://stackoverflow.com/questions/463832/using-dpapi-with-python
 
 import ctypes
+from ctypes import wintypes
 
 _local_free = ctypes.windll.kernel32.LocalFree
 _memcpy = ctypes.cdll.msvcrt.memcpy
@@ -18,7 +19,7 @@ class DATA_BLOB(ctypes.Structure):
     See documentation for this type at:
     https://msdn.microsoft.com/en-us/7a06eae5-96d8-4ece-98cb-cf0710d2ddbd
     """
-    _fields_ = [("cbData", ctypes.wintypes.DWORD), ("pbData", ctypes.POINTER(ctypes.c_char))]
+    _fields_ = [("cbData", wintypes.DWORD), ("pbData", ctypes.POINTER(ctypes.c_char))]
 
     def raw(self):
         # type: () -> bytes
