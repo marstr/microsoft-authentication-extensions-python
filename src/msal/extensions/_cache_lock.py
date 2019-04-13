@@ -3,6 +3,7 @@ import datetime
 import time
 import psutil
 
+
 class CrossPlatLock(object):
     RETRY_WAIT = datetime.timedelta(milliseconds=100)
     RETRY_COUNT = int(datetime.timedelta(minutes=1).total_seconds() / RETRY_WAIT.total_seconds())
