@@ -20,11 +20,11 @@ class WindowsTokenCache(msal.SerializableTokenCache):
         if 'entropy' in kwargs:
            entropy = kwargs['entropy']
         self._dp_agent = WindowsDataProtectionAgent(entropy=entropy)
-        self._last_touch = 0 # _last_touch is a Unixtime
+        self._last_sync = 0 # _last_sync is a Unixtime
 
     def _has_state_changed(self):
         # type: () -> Bool
-        return self.has_state_changed or self._last_touch < os.path.getmtime(self._cache_location)
+        return self.has_state_changed or self._last_sync < os.path.getmtime(self._cache_location)
 
     def add(self, event, **kwargs):
         super(WindowsTokenCache, self).add(event, **kwargs)
@@ -46,12 +46,14 @@ class WindowsTokenCache(msal.SerializableTokenCache):
     def _write(self):
         with CrossPlatLock(self._lock_location), open(self._cache_location, 'wb') as fh:
             fh.write(self._dp_agent.protect(self.serialize()))
+        self._last_sync = int(time.time())
 
     def _read(self):
         with CrossPlatLock(self._lock_location), open(self._cache_location, 'rb') as fh:
             cipher_text = fh.read()
             contents = self._dp_agent.unprotect(cipher_text)
             self.deserialize(contents)
+        self._last_sync = int(time.time())
             
 
 
