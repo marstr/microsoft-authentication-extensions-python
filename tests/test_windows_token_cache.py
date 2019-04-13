@@ -7,7 +7,7 @@ import msal
 if not sys.platform.startswith('win'):
     pytest.skip('skipping windows-only tests', allow_module_level=True)
 else:
-    from msal.extensions.token_cache import WindowsTokenCache
+    from msal.extensions.token_cache import _WindowsTokenCache
 
 def test_read_cache():
     cache_locations = [
@@ -19,7 +19,7 @@ def test_read_cache():
     found = False
     for loc in cache_locations:
         try:
-            subject = WindowsTokenCache(cache_location=loc)
+            subject = _WindowsTokenCache(cache_location=loc)
             tokens = subject.find(msal.TokenCache.CredentialType.ACCESS_TOKEN)
             assert len(tokens) > 0
             found = True

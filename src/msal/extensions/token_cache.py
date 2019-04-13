@@ -1,22 +1,43 @@
+import sys
 import os
 import msal
 import time
 from ._cache_lock import CrossPlatLock
-from ._windows import WindowsDataProtectionAgent
 
-class WindowsTokenCache(msal.SerializableTokenCache):
+class ProtectedTokenCache(msal.SerializableTokenCache):
+    def __init__(self, **kwargs):
+        if sys.platform.startswith('win'):
+            self._underlyer = _WindowsTokenCache(**kwargs)
+        else:
+            raise Exception('unsupported platform {}'.format(sys.platform))
+
+    def add(self, event, **kwargs):
+        self._underlyer.add(event, **kwargs)
+
+    def update_rt(self, rt_item, new_rt):
+        self._underlyer.update_rt(rt_item, new_rt)
+    
+    def remove_rt(self, rt_item):
+        self._underlyer.remove_rt(rt_item)
+    
+    def find(self, credential_type, target=None, query=None):
+        return self._underlyer.find(credential_type, target=target, query=query)
+
+    
+class _WindowsTokenCache(msal.SerializableTokenCache):
     DEFAULT_CACHE_LOCATION = os.path.join(os.getenv('LOCALAPPDATA'), '.IdentityService', 'msal.cache')
     DEFAULT_ENTROPY = ''
 
     def __init__(self, **kwargs):
-        super(WindowsTokenCache, self).__init__()
+        from ._windows import WindowsDataProtectionAgent
+        super(_WindowsTokenCache, self).__init__()
 
-        self._cache_location = WindowsTokenCache.DEFAULT_CACHE_LOCATION # type: str
+        self._cache_location = _WindowsTokenCache.DEFAULT_CACHE_LOCATION # type: str
         if 'cache_location' in kwargs:
             self._cache_location = kwargs['cache_location']
         self._lock_location = self._cache_location + '.lockfile'
 
-        entropy = WindowsTokenCache.DEFAULT_ENTROPY
+        entropy = _WindowsTokenCache.DEFAULT_ENTROPY
         if 'entropy' in kwargs:
            entropy = kwargs['entropy']
         self._dp_agent = WindowsDataProtectionAgent(entropy=entropy)
@@ -27,21 +48,21 @@ class WindowsTokenCache(msal.SerializableTokenCache):
         return self.has_state_changed or self._last_sync < os.path.getmtime(self._cache_location)
 
     def add(self, event, **kwargs):
-        super(WindowsTokenCache, self).add(event, **kwargs)
+        super(_WindowsTokenCache, self).add(event, **kwargs)
         self._write()
 
     def update_rt(self, rt_item, new_rt):
-        super(WindowsTokenCache, self).update_rt(rt_item, new_rt)
+        super(_WindowsTokenCache, self).update_rt(rt_item, new_rt)
         self._write()
 
     def remove_rt(self, rt_item):
-        super(WindowsTokenCache, self).remove_rt(rt_item)
+        super(_WindowsTokenCache, self).remove_rt(rt_item)
         self._write()
 
     def find(self, credential_type, target=None, query=None):
         if self._has_state_changed():
             self._read()
-        return super(WindowsTokenCache, self).find(credential_type, target=target, query=query)
+        return super(_WindowsTokenCache, self).find(credential_type, target=target, query=query)
 
     def _write(self):
         with CrossPlatLock(self._lock_location), open(self._cache_location, 'wb') as fh:
