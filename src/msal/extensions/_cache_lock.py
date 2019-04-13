@@ -20,10 +20,12 @@ class CrossPlatLock(object):
             try:
                 self._fh = open(self._lockpath, 'wb+', buffering=0)
                 self._fh.write('{} {}'.format(pid, proc.name()).encode('utf-8'))
-                break
+                return
             except PermissionError:
                 time.sleep(CrossPlatLock.RETRY_WAIT.total_seconds())
         
+        raise TimeoutError()
+
 
     def __exit__(self, *args):
         self._fh.close()
