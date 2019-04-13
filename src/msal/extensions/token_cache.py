@@ -4,6 +4,7 @@ import msal
 import time
 from ._cache_lock import CrossPlatLock
 
+
 class ProtectedTokenCache(msal.SerializableTokenCache):
     def __init__(self, **kwargs):
         if sys.platform.startswith('win'):
@@ -45,7 +46,10 @@ class _WindowsTokenCache(msal.SerializableTokenCache):
 
     def _has_state_changed(self):
         # type: () -> Bool
-        return self.has_state_changed or self._last_sync < os.path.getmtime(self._cache_location)
+        try:
+            return self.has_state_changed or self._last_sync < os.path.getmtime(self._cache_location)
+        except FileNotFoundError:
+            return False
 
     def add(self, event, **kwargs):
         super(_WindowsTokenCache, self).add(event, **kwargs)
