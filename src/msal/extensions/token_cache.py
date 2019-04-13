@@ -54,6 +54,3 @@ class WindowsTokenCache(msal.SerializableTokenCache):
             contents = self._dp_agent.unprotect(cipher_text)
             self.deserialize(contents)
         self._last_sync = int(time.time())
-            
-
-

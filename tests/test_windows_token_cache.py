@@ -22,6 +22,7 @@ def test_read_cache():
             subject = WindowsTokenCache(cache_location=loc)
             tokens = subject.find(msal.TokenCache.CredentialType.ACCESS_TOKEN)
             assert len(tokens) > 0
+            found = True
             break
         except FileNotFoundError:
                 pass
