@@ -2,11 +2,13 @@ import os
 import datetime
 import time
 import psutil
+import portalocker
 
 
 class CrossPlatLock(object):
+    TIMEOUT = datetime.timedelta(minutes=1)
     RETRY_WAIT = datetime.timedelta(milliseconds=100)
-    RETRY_COUNT = int(datetime.timedelta(minutes=1).total_seconds() / RETRY_WAIT.total_seconds())
+    RETRY_COUNT = int(TIMEOUT / RETRY_WAIT)
 
     def __init__(self, lockfile_path):
         self._lockpath = lockfile_path
@@ -14,20 +16,16 @@ class CrossPlatLock(object):
     def __enter__(self):
         pid = os.getpid()
         proc = psutil.Process(pid)
-        lockdir = os.path.dirname(self._lockpath)
-        os.makedirs(lockdir, exist_ok=True)
+        lock_dir = os.path.dirname(self._lockpath)
+        os.makedirs(lock_dir, exist_ok=True)
 
-        for _ in range(CrossPlatLock.RETRY_COUNT):
-            try:
-                self._fh = open(self._lockpath, 'wb+', buffering=0)
-                self._fh.write('{} {}'.format(pid, proc.name()).encode('utf-8'))
-                return
-            except PermissionError:
-                time.sleep(CrossPlatLock.RETRY_WAIT.total_seconds())
-        
-        raise TimeoutError()
-
+        self._fh = open(self._lockpath, 'wb+', buffering=0)
+        portalocker.lock(self._fh, portalocker.LOCK_EX)
+        self._fh.write('{} {}'.format(pid, proc.name()).encode('utf-8'))
 
     def __exit__(self, *args):
         self._fh.close()
-        os.remove(self._lockpath)
+        try:
+            os.remove(self._lockpath)
+        except PermissionError:
+            pass
