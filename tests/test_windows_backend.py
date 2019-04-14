@@ -2,7 +2,6 @@ import sys
 import os
 import pytest
 import uuid
-import json
 import msal
 
 if not sys.platform.startswith('win'):
