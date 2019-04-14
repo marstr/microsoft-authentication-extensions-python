@@ -6,6 +6,7 @@ from ._cache_lock import CrossPlatLock
 
 
 class ProtectedTokenCache(msal.SerializableTokenCache):
+    """Decorates platform specific implementations of TokenCache which use OS provided encryption mechanisms."""
     def __init__(self, **kwargs):
         if sys.platform.startswith('win'):
             self._underlyer = _WindowsTokenCache(**kwargs)
@@ -40,7 +41,7 @@ class _WindowsTokenCache(msal.SerializableTokenCache):
 
         entropy = _WindowsTokenCache.DEFAULT_ENTROPY
         if 'entropy' in kwargs:
-           entropy = kwargs['entropy']
+            entropy = kwargs['entropy']
         self._dp_agent = WindowsDataProtectionAgent(entropy=entropy)
         self._last_sync = 0 # _last_sync is a Unixtime
 
