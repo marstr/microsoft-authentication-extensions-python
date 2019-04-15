@@ -43,7 +43,7 @@ class _WindowsTokenCache(msal.SerializableTokenCache):
         if 'entropy' in kwargs:
             entropy = kwargs['entropy']
         self._dp_agent = WindowsDataProtectionAgent(entropy=entropy)
-        self._last_sync = 0 # _last_sync is a Unixtime
+        self._last_sync = 0  # _last_sync is a Unixtime
 
     def _has_state_changed(self):
         # type: () -> Bool
