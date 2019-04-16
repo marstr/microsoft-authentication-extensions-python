@@ -9,6 +9,7 @@ if not sys.platform.startswith('win'):
 else:
     from msal.extensions.token_cache import _WindowsTokenCache
 
+
 def test_read_cache():
     cache_locations = [
         os.path.join(os.getenv('LOCALAPPDATA'), '.IdentityService', 'msal.cache'), # this is where it's supposed to be

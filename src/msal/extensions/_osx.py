@@ -1,5 +1,7 @@
 import os
 import ctypes as _ctypes
+import time
+import msal
 
 OS_result = _ctypes.c_int32
 
@@ -38,20 +40,21 @@ class NoDefaultKeychainError(KeychainError):
 class KeychainItemNotFoundError(KeychainError):
     EXIT_STATUS = -25300
 
-    def __init__(self, name):
+    def __init__(self, service_name, account_name):
         super().__init__(KeychainItemNotFoundError.EXIT_STATUS)
-        self.name = name
+        self.service_name = service_name
+        self.account_name = account_name
 
 
 def _construct_error(exit_status, **kwargs):
     if exit_status == KeychainAccessDeniedError.EXIT_STATUS:
         return KeychainAccessDeniedError()
     if exit_status == NoSuchKeychainError.EXIT_STATUS:
-        return NoSuchKeychainError(kwargs['keychain_name'])
+        return NoSuchKeychainError(**kwargs)
     if exit_status == NoDefaultKeychainError.EXIT_STATUS:
         return NoDefaultKeychainError()
     if exit_status == KeychainItemNotFoundError.EXIT_STATUS:
-        return KeychainItemNotFoundError(kwargs['item_name'])
+        return KeychainItemNotFoundError(**kwargs)
 
 
 def _get_native_location(name):
@@ -171,7 +174,7 @@ class Keychain(object):
         else:
             status = _securityKeychainCopyDefault(self._ref)
 
-        if not status:
+        if status:
             raise OSError(status)
         return self
 
@@ -197,8 +200,8 @@ class Keychain(object):
             None,
         )
 
-        if not exit_status:
-            raise _construct_error(exit_status=exit_status)
+        if exit_status:
+            raise _construct_error(exit_status=exit_status, service_name=service, account_name=account_name)
 
         value = _ctypes.create_string_buffer(length.value)
         _ctypes.memmove(value, contents.value, length.value)
@@ -210,6 +213,7 @@ class Keychain(object):
         service = service.encode('utf-8')
         account_name = account_name.encode('utf-8')
         value = value.encode('utf-8')
+
         entry = _ctypes.c_void_p()
         find_exit_status = _securityKeychainFindGenericPassword(
             self._ref,
@@ -222,15 +226,17 @@ class Keychain(object):
             entry,
         )
 
-        if find_exit_status == 0:
+        if not find_exit_status:
             modify_exit_status = _securityKeychainItemModifyAttributesAndData(
                 entry,
                 None,
                 len(value),
                 value,
             )
-            _securityKeychainItemFreeContent(None, entry)
-        elif find_exit_status == KeychainItemNotFoundError.exit_status():
+            if modify_exit_status:
+                raise _construct_error(modify_exit_status, service_name=service, account_name=account_name)
+
+        elif find_exit_status == KeychainItemNotFoundError.EXIT_STATUS:
             add_exit_status = _securityKeychainAddGenericPassword(
                 self._ref,
                 len(service),
@@ -242,10 +248,10 @@ class Keychain(object):
                 None
             )
 
-            if add_exit_status != 0:
-                raise OSError(add_exit_status)
+            if add_exit_status:
+                raise _construct_error(add_exit_status, service_name=service, account_name=account_name)
         else:
-            raise OSError(find_exit_status)
+            raise _construct_error(find_exit_status, service_name=service, account_name=account_name)
 
     def get_internet_password(self, service, username):
         # type: (str, str) -> str
@@ -255,3 +261,39 @@ class Keychain(object):
         # type: (str, str, str) -> str
         raise NotImplementedError()
 
+
+class _OSXTokenCache(msal.SerializableTokenCache):
+    DEFAULT_SERVICE_NAME = 'Microsoft.Developer.IdentityService'
+    DEFAULT_ACCOUNT_NAME = 'MSALCache'
+
+    def __init__(self, **kwargs):
+        super(_OSXTokenCache, self).__init__()
+        self._service_name = kwargs.get('service_name', _OSXTokenCache.DEFAULT_SERVICE_NAME)
+        self._account_name = kwargs.get('account_name', _OSXTokenCache.DEFAULT_ACCOUNT_NAME)
+
+    def add(self, event, **kwargs):
+        super(_OSXTokenCache, self).add(event, **kwargs)
+        self._write()
+
+    def update_rt(self, rt_item, new_rt):
+        super(_OSXTokenCache, self).update_rt(rt_item, new_rt)
+        self._write()
+
+    def remove_rt(self, rt_item):
+        super(_OSXTokenCache, self).remove_rt(rt_item)
+        self._write()
+
+    def find(self, credential_type, target=None, query=None):
+        self._read()
+        return super(_OSXTokenCache, self).find(credential_type, target=target, query=query)
+
+    def _read(self):
+        with Keychain() as locker:
+            contents = locker.get_generic_password(self._service_name, self._account_name)
+        self.deserialize(contents)
+        self._last_sync = int(time.time())
+
+    def _write(self):
+        with Keychain() as locker:
+            locker.set_generic_password(self._service_name, self._account_name, self.serialize())
+        self._last_sync = int(time.time())
