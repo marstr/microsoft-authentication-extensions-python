@@ -1,6 +1,7 @@
 import os
 import abc
 from msal.application import PublicClientApplication
+from .token_cache import ProtectedTokenCache
 
 
 class TokenProvider(abc.ABC):
@@ -27,8 +28,10 @@ class TokenProviderChain(TokenProvider):
 
 
 class SharedTokenCacheProvider(TokenProvider):
-    def __init__(self, client_id, username=None):
-        self._app = PublicClientApplication(client_id=client_id)
+    def __init__(self, client_id, username=None, cache_location=None):
+        cache_location = cache_location or os.path.join(os.getenv('LOCALAPPDATA'), 'msal.cache')
+        token_cache = ProtectedTokenCache(cache_location=cache_location)
+        self._app = PublicClientApplication(client_id=client_id, token_cache=token_cache)
         self._username = username
 
     def available(self):
@@ -38,7 +41,7 @@ class SharedTokenCacheProvider(TokenProvider):
         accounts = self._get_accounts()
         if any(accounts):
             active_account = accounts[0]
-        self._app.acquire_token_silent(scopes=scopes, account=active_account)
+        return self._app.acquire_token_silent(scopes=scopes, account=active_account)
 
     def _get_accounts(self):
         return self._app.get_accounts(username=self._username)
