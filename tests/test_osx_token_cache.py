@@ -16,3 +16,4 @@ def test_read_cache():
         assert len(tokens) > 0
     except KeychainItemNotFoundError:
         pytest.skip('could not find the MSAL Cache (try logging in using MSAL)')
+
