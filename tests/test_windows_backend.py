@@ -7,7 +7,7 @@ import msal
 if not sys.platform.startswith('win'):
     pytest.skip('skipping windows-only tests', allow_module_level=True)
 else:
-    from msal.extensions._windows import WindowsDataProtectionAgent
+    from msal_extensions._windows import WindowsDataProtectionAgent
 
 
 def test_dpapi_roundtrip_with_entropy():
@@ -63,4 +63,4 @@ def test_read_msal_cache():
     cache.deserialize(raw)
     access_tokens = cache.find(msal.TokenCache.CredentialType.ACCESS_TOKEN)
     assert len(access_tokens) > 0
-    
+

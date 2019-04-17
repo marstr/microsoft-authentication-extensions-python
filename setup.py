@@ -3,7 +3,7 @@
 from setuptools import setup, find_packages
 
 setup(
-    name='msal-extensions',
+    name='msal_extensions',
     package_dir={
         '': 'src',
     },

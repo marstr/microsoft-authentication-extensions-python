@@ -7,14 +7,15 @@ import msal
 if not sys.platform.startswith('win'):
     pytest.skip('skipping windows-only tests', allow_module_level=True)
 else:
-    from msal.extensions.token_cache import _WindowsTokenCache
+    from msal_extensions.token_cache import _WindowsTokenCache
 
 
 def test_read_cache():
+    appdata_loc = os.getenv('LOCALAPPDATA')
     cache_locations = [
-        os.path.join(os.getenv('LOCALAPPDATA'), '.IdentityService', 'msal.cache'), # this is where it's supposed to be
-        os.path.join(os.getenv('LOCALAPPDATA'), '.IdentityServices', 'msal.cache'), # There was a miscommunications about whether this was plural or not.
-        os.path.join(os.getenv('LOCALAPPDATA'), 'msal.cache'), # The earliest most naive builds used this locations.
+        os.path.join(appdata_loc, '.IdentityService', 'msal.cache'),  # this is where it's supposed to be
+        os.path.join(appdata_loc, '.IdentityServices', 'msal.cache'),  # miscommunication about this being plural or not
+        os.path.join(appdata_loc, 'msal.cache'),  # The earliest most naive builds used this locations
     ]
 
     found = False

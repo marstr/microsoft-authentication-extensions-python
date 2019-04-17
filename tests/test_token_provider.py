@@ -1,4 +1,4 @@
-from msal.extensions import TokenProvider, TokenProviderChain
+from msal_extensions import TokenProvider, TokenProviderChain
 
 
 class NeverAvailableTokenProvider(TokenProvider):

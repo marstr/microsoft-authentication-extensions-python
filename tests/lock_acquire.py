@@ -2,7 +2,7 @@ import sys
 import os
 import time
 import datetime
-from msal.extensions._cache_lock import CrossPlatLock
+from msal_extensions._cache_lock import CrossPlatLock
 
 
 def main(hold_time):
