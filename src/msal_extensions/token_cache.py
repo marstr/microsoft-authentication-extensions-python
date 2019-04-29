@@ -10,40 +10,20 @@ elif sys.platform.startswith('darwin'):
     from ._osx import _OSXTokenCache
 
 
-class ProtectedTokenCache(msal.SerializableTokenCache):
-    """Decorates platform specific implementations of TokenCache which use OS provided encryption mechanisms."""
-    def __init__(self, **kwargs):
-        if sys.platform.startswith('win'):
-            self._underlyer = _WindowsTokenCache(**kwargs)
-            self._is_protected = True
-        elif sys.platform.startswith('darwin'):
-            self._underlyer = _OSXTokenCache(**kwargs)
-            self._is_protected = True
-        else:
-            self._underlyer = FileTokenCache(**kwargs)
-            self._is_protected = False
-
-    def add(self, event, **kwargs):
-        self._underlyer.add(event, **kwargs)
-
-    def update_rt(self, rt_item, new_rt):
-        self._underlyer.update_rt(rt_item, new_rt)
-    
-    def remove_rt(self, rt_item):
-        self._underlyer.remove_rt(rt_item)
-    
-    def find(self, credential_type, target=None, query=None):
-        return self._underlyer.find(credential_type, target=target, query=query)
-
-    @property
-    def is_protected(self):
-        """On platforms where no implementation exists to protect """
-        return self._is_protected
+def get_protected_token_cache(enforce_encryption=False, **kwargs):
+    if sys.platform.startswith('win'):
+        return _WindowsTokenCache(**kwargs)
+    elif sys.platform.startswith('darwin'):
+        return _OSXTokenCache(**kwargs)
+    elif enforce_encryption:
+        raise RuntimeError('no protected token cache for platform {}'.format(sys.platform))
+    else:
+        return FileTokenCache(**kwargs)
 
 
 class FileTokenCache(msal.SerializableTokenCache):
     # TODO: Find correct location for this file
-    DEFAULT_FILE_LOCATION = os.join(tempfile.gettempdir(), "msal.cache.txt")
+    DEFAULT_FILE_LOCATION = os.path.join(tempfile.gettempdir(), "msal.cache.txt")
 
     def __init__(self, file_location=None):
         self._file_location = file_location or FileTokenCache.DEFAULT_FILE_LOCATION
