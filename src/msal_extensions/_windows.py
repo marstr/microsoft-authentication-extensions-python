@@ -119,19 +119,25 @@ class _WindowsTokenCache(msal.SerializableTokenCache):
             return False
 
     def add(self, event, **kwargs):
+        if self._has_state_changed:
+            self._read()
         super(_WindowsTokenCache, self).add(event, **kwargs)
         self._write()
 
     def update_rt(self, rt_item, new_rt):
+        if self.has_state_changed:
+            self._read()
         super(_WindowsTokenCache, self).update_rt(rt_item, new_rt)
         self._write()
 
     def remove_rt(self, rt_item):
+        if self._has_state_changed:
+            self._read()
         super(_WindowsTokenCache, self).remove_rt(rt_item)
         self._write()
 
     def find(self, credential_type, target=None, query=None):
-        if self._has_state_changed():
+        if self._has_state_changed:
             self._read()
         return super(_WindowsTokenCache, self).find(credential_type, target=target, query=query)
 
