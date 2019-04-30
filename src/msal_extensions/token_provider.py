@@ -29,7 +29,7 @@ class TokenProviderChain(TokenProvider):
         return any((item for item in self._links if item.available()))
 
     def get_token(self, scopes=None, username=None):
-        return next((item.get_token(scopes=scopes, username=username) for item in self._links if item.available()))
+        return next((item.get_token(scopes=scopes) for item in self._links if item.available()))
 
 
 class SharedTokenCacheProvider(TokenProvider):
