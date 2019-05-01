@@ -5,7 +5,7 @@ from setuptools import setup, find_packages
 __version__ = "0.0.1"
 
 setup(
-    name='msal-extensions',
+    name='marstr-msal-extensions',
     version=__version__,
     package_dir={
         '': 'src',
