@@ -102,7 +102,7 @@ class _WindowsTokenCache(msal.SerializableTokenCache):
 
         self._cache_location = _WindowsTokenCache.DEFAULT_CACHE_LOCATION  # type: str
         if 'cache_location' in kwargs:
-            self._cache_location = kwargs['cache_location']
+            self._cache_location = kwargs['cache_location'] or _WindowsTokenCache.DEFAULT_CACHE_LOCATION
         self._lock_location = self._cache_location + '.lockfile'
 
         entropy = _WindowsTokenCache.DEFAULT_ENTROPY

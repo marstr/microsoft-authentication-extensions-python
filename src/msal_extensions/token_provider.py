@@ -36,7 +36,6 @@ class SharedTokenCacheProvider(TokenProvider):
 
     def __init__(self, client_id=None, cache_location=None):
         client_id = client_id or _DEFAULT_CLIENT_ID
-        cache_location = cache_location or os.path.join(os.getenv('LOCALAPPDATA'), 'msal.cache')
         token_cache = get_protected_token_cache(cache_location=cache_location)
         self._app = PublicClientApplication(client_id=client_id, token_cache=token_cache)
 
