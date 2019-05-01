@@ -25,8 +25,8 @@ class FileTokenCache(msal.SerializableTokenCache):
     # TODO: Find correct location for this file
     DEFAULT_FILE_LOCATION = os.path.join(tempfile.gettempdir(), "msal.cache.txt")
 
-    def __init__(self, file_location=None):
-        self._file_location = file_location or FileTokenCache.DEFAULT_FILE_LOCATION
+    def __init__(self, **kwargs):
+        self._file_location = kwargs.get('cache_location', FileTokenCache.DEFAULT_FILE_LOCATION)
         self._last_sync = 0
 
     def add(self, event, **kwargs):
