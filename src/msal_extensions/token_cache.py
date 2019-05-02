@@ -44,7 +44,7 @@ class FileTokenCache(msal.SerializableTokenCache):
     def find(self, credential_type, target=None, query=None):
         if self._has_state_changed():
             self._read()
-        return super(_WindowsTokenCache, self).find(credential_type, target=target, query=query)
+        return super(FileTokenCache, self).find(credential_type, target=target, query=query)
 
     def _write(self):
         with open(self._file_location, "w") as fh:

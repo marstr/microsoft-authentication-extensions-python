@@ -1,0 +1,10 @@
+ARG base=python:2.7
+FROM $base
+
+WORKDIR /usr/src/microsoft-authentication-extensions-for-python
+
+ADD . .
+
+RUN pip install -e ".[dev]"
+
+CMD pytest

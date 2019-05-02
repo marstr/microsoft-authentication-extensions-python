@@ -8,7 +8,7 @@ import portalocker
 class CrossPlatLock(object):
     TIMEOUT = datetime.timedelta(minutes=1)
     RETRY_WAIT = datetime.timedelta(milliseconds=100)
-    RETRY_COUNT = int(TIMEOUT / RETRY_WAIT)
+    RETRY_COUNT = int(TIMEOUT.total_seconds() / RETRY_WAIT.total_seconds())
 
     def __init__(self, lockfile_path):
         self._lockpath = lockfile_path
@@ -17,7 +17,8 @@ class CrossPlatLock(object):
         pid = os.getpid()
         proc = psutil.Process(pid)
         lock_dir = os.path.dirname(self._lockpath)
-        os.makedirs(lock_dir, exist_ok=True)
+        if not os.path.exists(lock_dir):
+            os.makedirs(lock_dir)
 
         self._fh = open(self._lockpath, 'wb+', buffering=0)
         portalocker.lock(self._fh, portalocker.LOCK_EX)

@@ -3,6 +3,7 @@ import ctypes
 from ctypes import wintypes
 import time
 import msal
+import errno
 from ._cache_lock import CrossPlatLock
 
 _local_free = ctypes.windll.kernel32.LocalFree
@@ -115,15 +116,18 @@ class _WindowsTokenCache(msal.SerializableTokenCache):
         # type: () -> Bool
         try:
             return self.has_state_changed or self._last_sync < os.path.getmtime(self._cache_location)
-        except FileNotFoundError:
+        except OSError as e:
+            if e.errno != errno.ENOENT:
+                raise e
             return False
 
     def add(self, event, **kwargs):
         if self._has_state_changed:
             try:
                 self._read()
-            except FileNotFoundError:
-                pass
+            except OSError as e:
+                if e.errno != errno.ENOENT:
+                    raise e
         super(_WindowsTokenCache, self).add(event, **kwargs)
         self._write()
 
@@ -131,8 +135,9 @@ class _WindowsTokenCache(msal.SerializableTokenCache):
         if self.has_state_changed:
             try:
                 self._read()
-            except FileNotFoundError:
-                pass
+            except OSError as e:
+                if e.errno != errno.ENOENT:
+                    raise e
         super(_WindowsTokenCache, self).update_rt(rt_item, new_rt)
         self._write()
 
@@ -140,8 +145,9 @@ class _WindowsTokenCache(msal.SerializableTokenCache):
         if self._has_state_changed:
             try:
                 self._read()
-            except FileNotFoundError:
-                pass
+            except OSError as e:
+                if e.errno != errno.ENOENT:
+                    raise e
         super(_WindowsTokenCache, self).remove_rt(rt_item)
         self._write()
 
@@ -149,8 +155,9 @@ class _WindowsTokenCache(msal.SerializableTokenCache):
         if self._has_state_changed:
             try:
                 self._read()
-            except FileNotFoundError:
-                pass
+            except OSError as e:
+                if e.errno != errno.ENOENT:
+                    raise e
         return super(_WindowsTokenCache, self).find(credential_type, target=target, query=query)
 
     def _write(self):

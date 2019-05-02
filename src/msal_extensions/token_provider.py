@@ -9,7 +9,9 @@ class ProviderUnavailableError(ValueError):
     pass
 
 
-class TokenProvider(abc.ABC):
+class TokenProvider(object):
+    __metaclass__ = abc.ABCMeta
+
     @abc.abstractmethod
     def available(self):
         # type: () -> bool
